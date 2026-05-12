@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MML 09 &mdash; Linear Regression</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]})"></script>
+    <style>
+        :root { --bg-primary:#0a0a0a; --bg-card:#0d1117; --bg-code:#161b22; --text-primary:#e6edf3; --text-secondary:#8b949e; --accent:#a78bfa; --accent-dim:#a78bfa44; --accent-glow:#a78bfa33; --accent-2:#f472b6; --accent-3:#fbbf24; --accent-4:#34d399; --border:#21262d; --font-display:'Space Grotesk',sans-serif; --font-mono:'JetBrains Mono','Fira Code',monospace; --font-body:'Inter',sans-serif; --max-width:900px; }
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        html{scroll-behavior:smooth}
+        body{background:var(--bg-primary);color:var(--text-primary);font-family:var(--font-body);font-size:17px;line-height:1.7;overflow-x:hidden}
+        .hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:2rem 1.5rem;text-align:center;position:relative}
+        .hero::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:700px;height:600px;background:radial-gradient(circle,var(--accent-glow) 0%,transparent 70%);pointer-events:none;z-index:0}
+        .hero>*{position:relative;z-index:1}
+        .series-label{font-family:var(--font-mono);font-size:.85rem;color:var(--accent);letter-spacing:.15em;text-transform:uppercase;margin-bottom:1rem}
+        .hero h1{font-family:var(--font-display);font-size:clamp(2rem,5vw,3.2rem);font-weight:700;color:var(--text-primary);line-height:1.2;margin-bottom:1rem}
+        .hero h1 .accent{color:var(--accent)}
+        .hero .subtitle{font-size:1.1rem;color:var(--text-secondary);max-width:640px;margin-bottom:2rem}
+        .tags{display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center;margin-bottom:2.5rem}
+        .tag{font-family:var(--font-mono);font-size:.75rem;padding:.25rem .75rem;border-radius:999px;border:1px solid var(--accent);color:var(--accent);background:var(--accent-dim);white-space:nowrap}
+        .slide{min-height:100vh;max-width:var(--max-width);margin:0 auto;padding:4rem 1.5rem;position:relative;display:flex;flex-direction:column;justify-content:center}
+        .slide-number{font-family:var(--font-display);font-size:5rem;font-weight:700;color:var(--accent-dim);position:absolute;top:2rem;right:1.5rem;line-height:1;user-select:none}
+        .slide h2{font-family:var(--font-display);font-size:1.9rem;font-weight:700;color:var(--accent);margin-bottom:1.5rem;line-height:1.25}
+        .slide h3{font-family:var(--font-display);font-size:1.3rem;font-weight:600;color:var(--text-primary);margin-top:1.5rem;margin-bottom:.75rem}
+        .slide p{margin-bottom:1rem;color:var(--text-secondary)}
+        .slide p strong{color:var(--text-primary)}
+        .slide ul,.slide ol{margin-bottom:1rem;padding-left:1.5rem;color:var(--text-secondary)}
+        .slide li{margin-bottom:.4rem}
+        .slide li strong{color:var(--text-primary)}
+        .slide code{background:var(--bg-code);padding:.1rem .35rem;border-radius:3px;font-family:var(--font-mono);font-size:.85em;color:var(--accent)}
+        .diagram-grid{display:grid;gap:.75rem;margin:1.5rem 0;padding:1.5rem;background:var(--bg-card);border:1px solid var(--border);border-radius:8px}
+        .diagram-grid.cols-2{grid-template-columns:1fr 1fr}
+        .diagram-grid.cols-3{grid-template-columns:1fr 1fr 1fr}
+        .diagram-panel{padding:1rem;background:var(--bg-code);border:1px solid var(--border);border-radius:6px}
+        .diagram-panel.accent-border{border-left:3px solid var(--accent)}
+        .diagram-panel.r{border-left:3px solid var(--accent-2)}
+        .diagram-panel.y{border-left:3px solid var(--accent-3)}
+        .diagram-panel.g{border-left:3px solid var(--accent-4)}
+        .diagram-panel h4{font-family:var(--font-display);font-size:1rem;color:var(--accent);margin-bottom:.5rem}
+        .diagram-panel.r h4{color:var(--accent-2)}
+        .diagram-panel.y h4{color:var(--accent-3)}
+        .diagram-panel.g h4{color:var(--accent-4)}
+        .diagram-panel p,.diagram-panel ul{font-size:.9rem}
+        .callout{background:var(--bg-card);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:1rem 1.25rem;margin:1.25rem 0}
+        .callout p{margin-bottom:0}
+        .callout .callout-label{font-family:var(--font-mono);font-size:.75rem;color:var(--accent);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.3rem}
+        .canvas-wrap{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:1rem;margin:1.25rem 0;overflow-x:auto}
+        .canvas-wrap canvas{display:block;margin:0 auto;max-width:100%}
+        .control-panel{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:1.25rem;margin:1.25rem 0}
+        .control-row{display:flex;flex-wrap:wrap;align-items:center;gap:.75rem;margin-bottom:.75rem}
+        .control-row label{font-family:var(--font-mono);font-size:.8rem;color:var(--text-secondary);min-width:130px}
+        .control-row input[type="range"]{flex:1;min-width:150px;accent-color:var(--accent)}
+        .control-row .val{font-family:var(--font-mono);font-size:.85rem;color:var(--accent);min-width:80px;text-align:right}
+        .btn{font-family:var(--font-mono);font-size:.8rem;padding:.4rem .9rem;background:var(--accent-dim);color:var(--accent);border:1px solid var(--accent);border-radius:4px;cursor:pointer}
+        .btn:hover{background:rgba(167,139,250,.25)}
+        .btn.secondary{background:var(--bg-code);color:var(--text-secondary);border-color:var(--border)}
+        .metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.5rem;margin-top:.75rem}
+        .metric{background:var(--bg-code);border:1px solid var(--border);border-radius:6px;padding:.6rem .8rem;text-align:center}
+        .metric .metric-label{font-family:var(--font-mono);font-size:.7rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.08em}
+        .metric .metric-value{font-family:var(--font-display);font-size:1.25rem;color:var(--accent);font-weight:600;margin-top:.2rem}
+        .contents-list{list-style:none;padding-left:0;counter-reset:contents}
+        .contents-list li{counter-increment:contents;padding:.6rem 0;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:1rem}
+        .contents-list li:last-child{border-bottom:none}
+        .contents-list li::before{content:counter(contents,decimal-leading-zero);font-family:var(--font-mono);font-size:.85rem;color:var(--accent);min-width:2rem}
+        .contents-list a{color:var(--text-primary);text-decoration:none}
+        .contents-list a:hover{color:var(--accent)}
+        .footer{text-align:center;padding:3rem 1.5rem;color:var(--text-secondary);font-size:.85rem;border-top:1px solid var(--border);max-width:var(--max-width);margin:0 auto}
+        .footer a{color:var(--accent);text-decoration:none}
+        .katex{color:var(--text-primary)}
+        .katex-display{margin:1rem 0;overflow-x:auto;overflow-y:hidden}
+        table{width:100%;border-collapse:collapse;font-size:.9rem;margin:1rem 0}
+        th{background:var(--bg-code);color:var(--accent);font-weight:600;text-align:left;padding:.6rem .85rem;border-bottom:1px solid var(--border);font-family:var(--font-display)}
+        td{padding:.5rem .85rem;border-bottom:1px solid var(--border);color:var(--text-secondary);vertical-align:top}
+        tr:last-child td{border-bottom:none}
+        tr:nth-child(even) td{background:rgba(13,17,23,.5)}
+        @media (max-width:640px){.slide{padding:3rem 1rem;min-height:auto}.slide-number{font-size:3rem;top:1.5rem;right:1rem}.slide h2{font-size:1.5rem}.diagram-grid.cols-2,.diagram-grid.cols-3{grid-template-columns:1fr}.hero h1{font-size:1.8rem}}
+    </style>
+</head>
+<body>
+
+<header class="hero">
+    <div class="series-label">Mathematics for Machine Learning &mdash; Deck 09</div>
+    <h1>Linear <span class="accent">Regression</span></h1>
+    <p class="subtitle">Least squares as projection, ridge as a Gaussian prior, and the full Bayesian posterior &mdash; all from Part I in five steps.</p>
+
+    <div class="tags">
+        <span class="tag">least squares</span><span class="tag">projection</span>
+        <span class="tag">ridge</span><span class="tag">MAP</span>
+        <span class="tag">Bayes</span><span class="tag">feature map</span>
+    </div>
+</header>
+
+<section class="slide" id="slide-00">
+    <div class="slide-number">00</div>
+    <h2>Topics We'll Cover</h2>
+    <ul class="contents-list">
+        <li><a href="#slide-01">The model and its assumptions</a></li>
+        <li><a href="#slide-02">Maximum-likelihood = least squares</a></li>
+        <li><a href="#slide-03">Least squares as orthogonal projection</a></li>
+        <li><a href="#slide-04">Ridge regression = MAP under a Gaussian prior</a></li>
+        <li><a href="#slide-05">Feature maps</a></li>
+        <li><a href="#slide-06">Bayesian linear regression: prior &amp; posterior</a></li>
+        <li><a href="#slide-07">Posterior predictive distribution</a></li>
+        <li><a href="#slide-08">Interactive: posterior shrink as data arrives</a></li>
+        <li><a href="#slide-09">Marginal likelihood &amp; model selection</a></li>
+        <li><a href="#slide-10">Cheat sheet</a></li>
+    </ul>
+</section>
+
+<section class="slide" id="slide-01">
+    <div class="slide-number">01</div>
+    <h2>The Model and Its Assumptions</h2>
+    <p>$$y_n = \boldsymbol\theta^\top \boldsymbol\phi(\mathbf{x}_n) + \varepsilon_n, \qquad \varepsilon_n \overset{\text{iid}}{\sim} \mathcal{N}(0, \sigma^2).$$</p>
+    <ul>
+        <li>$\boldsymbol\phi:\mathbb{R}^D\to\mathbb{R}^M$ is a fixed <em>feature map</em>;</li>
+        <li>$\boldsymbol\theta\in\mathbb{R}^M$ are the parameters we'll learn;</li>
+        <li>$\varepsilon_n$ is independent Gaussian noise.</li>
+    </ul>
+    <p>"Linear" refers to <em>linearity in $\boldsymbol\theta$</em>, not in $\mathbf{x}$. Quadratic, sinusoidal and RBF regression all sit inside this model with the right $\boldsymbol\phi$.</p>
+
+    <h3>Vector form</h3>
+    <p>Stack the data: $\mathbf{y} = (y_1,\dots,y_N)^\top$, $\Phi = [\boldsymbol\phi(\mathbf{x}_1)^\top; \dots; \boldsymbol\phi(\mathbf{x}_N)^\top]\in\mathbb{R}^{N\times M}$. Then</p>
+    <p>$$\mathbf{y} = \Phi\boldsymbol\theta + \boldsymbol\varepsilon, \qquad \boldsymbol\varepsilon\sim\mathcal{N}(\mathbf{0}, \sigma^2 I).$$</p>
+    <p>$\Phi$ is the <strong>design matrix</strong>. The entire chapter is a study of this single equation.</p>
+</section>
+
+<section class="slide" id="slide-02">
+    <div class="slide-number">02</div>
+    <h2>Maximum-Likelihood = Least Squares</h2>
+    <p>Under the Gaussian noise model the log-likelihood is</p>
+    <p>$$\log p(\mathbf{y}\mid\boldsymbol\theta) = -\frac{1}{2\sigma^2}\|\mathbf{y}-\Phi\boldsymbol\theta\|^2 + \text{const.}$$</p>
+    <p>So maximising likelihood is exactly minimising the sum of squared residuals. Setting the gradient (deck 05) to zero:</p>
+    <p>$$\nabla_{\boldsymbol\theta}\|\mathbf{y}-\Phi\boldsymbol\theta\|^2 = -2\Phi^\top(\mathbf{y}-\Phi\boldsymbol\theta) = 0 \;\Longrightarrow\; \Phi^\top\Phi\,\boldsymbol\theta = \Phi^\top\mathbf{y}.$$</p>
+    <p>This is the <strong>normal equation</strong>. If $\Phi^\top\Phi$ is invertible (columns of $\Phi$ independent):</p>
+    <p>$$\hat{\boldsymbol\theta}_{\text{ML}} = (\Phi^\top\Phi)^{-1}\Phi^\top\mathbf{y}.$$</p>
+
+    <div class="callout">
+        <div class="callout-label">When $\Phi$ is rank-deficient</div>
+        <p>The solution is no longer unique; the <em>set</em> of minimisers is an affine subspace. The <strong>minimum-norm</strong> solution is $\hat{\boldsymbol\theta} = \Phi^+ \mathbf{y}$ where $\Phi^+ = V\Sigma^+ U^\top$ is the Moore-Penrose pseudoinverse (deck 04). Equivalently it's the limit of ridge regression as $\lambda\to 0^+$.</p>
+    </div>
+</section>
+
+<section class="slide" id="slide-03">
+    <div class="slide-number">03</div>
+    <h2>Least Squares as Orthogonal Projection</h2>
+    <p>The fitted values are</p>
+    <p>$$\hat{\mathbf{y}} = \Phi\hat{\boldsymbol\theta}_{\text{ML}} = \Phi(\Phi^\top\Phi)^{-1}\Phi^\top \mathbf{y}.$$</p>
+    <p>The matrix in the middle is exactly the projection onto $\mathrm{Col}(\Phi)$ from deck 03. So:</p>
+
+    <div class="callout">
+        <div class="callout-label">Geometric statement</div>
+        <p>$\hat{\mathbf{y}}$ is the closest point in the column space $\mathrm{Col}(\Phi)$ to the observation vector $\mathbf{y}$. The residual $\mathbf{y}-\hat{\mathbf{y}}$ is perpendicular to $\mathrm{Col}(\Phi)$ &mdash; that's why $\Phi^\top(\mathbf{y}-\Phi\hat{\boldsymbol\theta}_{\text{ML}}) = 0$.</p>
+    </div>
+
+    <p>Once you see this, every property of linear regression follows by reading the deck-03 picture:</p>
+    <ul>
+        <li>$\hat{\mathbf{y}}$ is unique even when $\hat{\boldsymbol\theta}$ isn't;</li>
+        <li>The "hat matrix" $H = \Phi(\Phi^\top\Phi)^{-1}\Phi^\top$ is idempotent ($H^2 = H$) and symmetric;</li>
+        <li>$\mathrm{tr}(H) = \mathrm{rank}(\Phi)$ &mdash; the number of "effective degrees of freedom".</li>
+    </ul>
+</section>
+
+<section class="slide" id="slide-04">
+    <div class="slide-number">04</div>
+    <h2>Ridge Regression = MAP under a Gaussian Prior</h2>
+    <p>Place a prior $\boldsymbol\theta \sim \mathcal{N}(\mathbf{0}, \tau^2 I)$. The MAP estimator (deck 08) is</p>
+    <p>$$\hat{\boldsymbol\theta}_{\text{MAP}} = \arg\min_{\boldsymbol\theta}\;\frac{1}{2\sigma^2}\|\mathbf{y}-\Phi\boldsymbol\theta\|^2 + \frac{1}{2\tau^2}\|\boldsymbol\theta\|^2.$$</p>
+    <p>Setting the gradient to zero:</p>
+    <p>$$\hat{\boldsymbol\theta}_{\text{MAP}} = \Bigl(\Phi^\top\Phi + \frac{\sigma^2}{\tau^2} I\Bigr)^{-1}\Phi^\top\mathbf{y}.$$</p>
+    <p>This is <strong>ridge regression</strong> with $\lambda = \sigma^2/\tau^2$. Three observations:</p>
+    <ul>
+        <li>The added $\lambda I$ guarantees invertibility &mdash; even when $\Phi^\top\Phi$ is singular.</li>
+        <li>The Gaussian prior shrinks $\boldsymbol\theta$ toward $\mathbf{0}$; the strength $\lambda$ is the ratio of likelihood vs prior precision.</li>
+        <li>As $N\to\infty$ the data overwhelms the prior and $\hat{\boldsymbol\theta}_{\text{MAP}}\to\hat{\boldsymbol\theta}_{\text{ML}}$.</li>
+    </ul>
+</section>
+
+<section class="slide" id="slide-05">
+    <div class="slide-number">05</div>
+    <h2>Feature Maps</h2>
+    <p>The same machinery works for any $\boldsymbol\phi$. Three useful choices:</p>
+    <table>
+        <thead><tr><th>Feature map</th><th>Form</th><th>Comment</th></tr></thead>
+        <tbody>
+            <tr><td>Polynomial</td><td>$\boldsymbol\phi(x) = (1, x, x^2, \dots, x^M)$</td><td>Cheap to evaluate; basis is numerically ill-conditioned for large $M$. Orthogonal polynomials fix this.</td></tr>
+            <tr><td>Radial basis</td><td>$\phi_m(x) = e^{-\|x-\mu_m\|^2 / 2s^2}$</td><td>Place RBF centres on the data; localised features.</td></tr>
+            <tr><td>Fourier</td><td>$\phi_m(x) \in \{\sin(mx), \cos(mx)\}$</td><td>Orthonormal basis on $[0, 2\pi]$ &mdash; well-conditioned.</td></tr>
+        </tbody>
+    </table>
+
+    <h3>Kernel ridge regression</h3>
+    <p>Ridge regression with feature map $\boldsymbol\phi$ has the dual form (Woodbury identity):</p>
+    <p>$$\hat{\mathbf{y}}_\star = K(\mathbf{x}_\star, X)\,(K(X,X) + \lambda I)^{-1}\mathbf{y},$$</p>
+    <p>where $K(\mathbf{x}, \mathbf{x}') = \boldsymbol\phi(\mathbf{x})^\top\boldsymbol\phi(\mathbf{x}')$ is the kernel. This is the road into kernel methods and Gaussian process regression &mdash; the SVM (deck 12) is the classification analogue.</p>
+</section>
+
+<section class="slide" id="slide-06">
+    <div class="slide-number">06</div>
+    <h2>Bayesian Linear Regression: Prior &amp; Posterior</h2>
+    <p>Prior $\boldsymbol\theta\sim\mathcal N(\mathbf m_0, S_0)$; likelihood $\mathbf y\mid\boldsymbol\theta\sim\mathcal N(\Phi\boldsymbol\theta, \sigma^2 I)$. Both Gaussian, in $\boldsymbol\theta$ &mdash; the posterior is Gaussian (deck 06 conjugacy).</p>
+    <p>$$\boldsymbol\theta\mid\mathbf{y}\sim\mathcal N(\mathbf m_N, S_N), \qquad S_N^{-1} = S_0^{-1} + \frac{1}{\sigma^2}\Phi^\top\Phi,$$</p>
+    <p>$$\mathbf m_N = S_N\Bigl(S_0^{-1}\mathbf m_0 + \frac{1}{\sigma^2}\Phi^\top \mathbf{y}\Bigr).$$</p>
+
+    <p>Two specialisations:</p>
+    <ul>
+        <li><strong>Zero-mean isotropic prior</strong> $\mathbf m_0=\mathbf 0$, $S_0 = \tau^2 I$: $\mathbf m_N = (\Phi^\top\Phi + (\sigma^2/\tau^2)I)^{-1}\Phi^\top\mathbf{y}$. MAP = ridge above.</li>
+        <li><strong>Flat prior</strong> ($S_0\to\infty I$): $\mathbf m_N$ &rarr; $\hat{\boldsymbol\theta}_{\text{ML}}$.</li>
+    </ul>
+
+    <div class="callout">
+        <div class="callout-label">Why this is one of the most useful formulae in ML</div>
+        <p>$S_N^{-1}$ is the sum of two precision matrices: the prior precision and the data precision $\Phi^\top\Phi / \sigma^2$. Precisions add &mdash; that's why uncertainty (variance) <em>shrinks</em> as data arrives. Every Gaussian Bayesian update has this shape.</p>
+    </div>
+</section>
+
+<section class="slide" id="slide-07">
+    <div class="slide-number">07</div>
+    <h2>Posterior Predictive Distribution</h2>
+    <p>For a new input $\mathbf{x}_\star$, integrating out $\boldsymbol\theta$ under the posterior yields a Gaussian predictive distribution:</p>
+    <p>$$p(y_\star\mid\mathbf{x}_\star, \mathbf{y}) = \mathcal N\bigl(\boldsymbol\phi(\mathbf{x}_\star)^\top\mathbf m_N,\; \sigma^2 + \boldsymbol\phi(\mathbf{x}_\star)^\top S_N \boldsymbol\phi(\mathbf{x}_\star)\bigr).$$</p>
+    <p>Mean and variance split cleanly:</p>
+    <ul>
+        <li>$\boldsymbol\phi(\mathbf{x}_\star)^\top\mathbf m_N$ &mdash; the posterior <em>mean</em> prediction, same as plug-in MAP.</li>
+        <li>$\sigma^2$ &mdash; <em>aleatoric</em> uncertainty: irreducible noise.</li>
+        <li>$\boldsymbol\phi(\mathbf{x}_\star)^\top S_N \boldsymbol\phi(\mathbf{x}_\star)$ &mdash; <em>epistemic</em> uncertainty: how much we still don't know about $\boldsymbol\theta$. This term <em>grows</em> at inputs far from any training point and shrinks toward zero where data is plentiful.</li>
+    </ul>
+</section>
+
+<section class="slide" id="slide-08">
+    <div class="slide-number">08</div>
+    <h2>Interactive: Posterior Shrink as Data Arrives</h2>
+    <p>Click on the canvas to add a $(x, y)$ point. The black curve is the posterior mean; the purple band is the 95% predictive interval. Each point pulls the mean toward itself and narrows the band locally. Use RBF features by default; switch to polynomial in the dropdown.</p>
+
+    <div class="canvas-wrap">
+        <canvas id="blr-canvas" width="700" height="380"></canvas>
+    </div>
+
+    <div class="control-panel">
+        <div class="control-row">
+            <label for="blr-noise">noise σ</label>
+            <input type="range" id="blr-noise" min="0.05" max="0.6" step="0.01" value="0.2">
+            <div class="val" id="blr-noise-r">0.20</div>
+        </div>
+        <div class="control-row">
+            <label for="blr-prior">prior τ</label>
+            <input type="range" id="blr-prior" min="0.3" max="3.0" step="0.05" value="1.0">
+            <div class="val" id="blr-prior-r">1.00</div>
+        </div>
+        <div class="control-row">
+            <button class="btn" id="blr-truth">Add 5 points from truth</button>
+            <button class="btn secondary" id="blr-clear">Clear</button>
+        </div>
+        <div class="metric-grid">
+            <div class="metric"><div class="metric-label">N</div><div class="metric-value" id="blr-n">0</div></div>
+            <div class="metric"><div class="metric-label">mean |m_N|</div><div class="metric-value" id="blr-mn">—</div></div>
+            <div class="metric"><div class="metric-label">posterior width</div><div class="metric-value" id="blr-w">—</div></div>
+        </div>
+    </div>
+
+    <p>With no data, the prior dominates: the band is uniformly wide. With many points, the band collapses toward $2\sigma$ &mdash; the irreducible noise from slide 07.</p>
+</section>
+
+<section class="slide" id="slide-09">
+    <div class="slide-number">09</div>
+    <h2>Marginal Likelihood &amp; Model Selection</h2>
+    <p>The Bayesian evidence (deck 08, slide 10) for linear regression is in closed form:</p>
+    <p>$$p(\mathbf{y}\mid \Phi, \sigma^2, \tau^2) = \mathcal N\bigl(\mathbf{0},\, \sigma^2 I + \tau^2 \Phi\Phi^\top\bigr).$$</p>
+    <p>This is a Gaussian on $\mathbf{y}$ with covariance $K + \sigma^2 I$ where $K = \tau^2 \Phi\Phi^\top$ &mdash; the kernel matrix again. Maximising the log-evidence over $\sigma^2, \tau^2$ does model selection automatically &mdash; this is the <em>type-II maximum likelihood</em> or empirical Bayes, the engine behind Gaussian process hyperparameter learning.</p>
+
+    <div class="callout">
+        <div class="callout-label">Automatic Occam's razor</div>
+        <p>A flexible feature map ($\tau^2$ big) can fit the data well but spreads the prior mass thinly: the evidence integral is small. A rigid feature map ($\tau^2$ small) concentrates the mass but may fit poorly. The maximum is in the middle &mdash; without any held-out data.</p>
+    </div>
+</section>
+
+<section class="slide" id="slide-10">
+    <div class="slide-number">10</div>
+    <h2>Cheat Sheet</h2>
+    <table>
+        <thead><tr><th>Estimator</th><th>Formula</th></tr></thead>
+        <tbody>
+            <tr><td>$\hat{\boldsymbol\theta}_{\text{ML}}$</td><td>$(\Phi^\top\Phi)^{-1}\Phi^\top\mathbf{y}$ (or $\Phi^+\mathbf y$ for rank-deficient $\Phi$)</td></tr>
+            <tr><td>$\hat{\boldsymbol\theta}_{\text{MAP / ridge}}$</td><td>$(\Phi^\top\Phi + \lambda I)^{-1}\Phi^\top\mathbf y$, $\lambda = \sigma^2/\tau^2$</td></tr>
+            <tr><td>Posterior covariance</td><td>$S_N^{-1} = S_0^{-1} + \sigma^{-2}\Phi^\top\Phi$</td></tr>
+            <tr><td>Posterior mean</td><td>$\mathbf m_N = S_N(S_0^{-1}\mathbf m_0 + \sigma^{-2}\Phi^\top\mathbf y)$</td></tr>
+            <tr><td>Predictive mean</td><td>$\boldsymbol\phi(\mathbf x_\star)^\top \mathbf m_N$</td></tr>
+            <tr><td>Predictive variance</td><td>$\sigma^2 + \boldsymbol\phi(\mathbf x_\star)^\top S_N \boldsymbol\phi(\mathbf x_\star)$</td></tr>
+            <tr><td>Hat matrix</td><td>$H = \Phi(\Phi^\top\Phi)^{-1}\Phi^\top$, idempotent, symmetric</td></tr>
+            <tr><td>DoF</td><td>$\mathrm{tr}(H) = \mathrm{rank}(\Phi)$</td></tr>
+            <tr><td>Dual / kernel form</td><td>$\hat{\mathbf y}_\star = K(\mathbf x_\star, X)(K(X,X)+\lambda I)^{-1}\mathbf y$</td></tr>
+        </tbody>
+    </table>
+</section>
+
+<footer class="footer">
+    <p><strong>Book:</strong> Deisenroth, Faisal &amp; Ong, <em>Mathematics for Machine Learning</em> &mdash; Cambridge University Press, 2020, chapter 9.<br>Free PDF: <a href="https://mml-book.github.io/book/mml-book.pdf">mml-book.github.io/book/mml-book.pdf</a></p>
+    <p style="margin-top:.6rem"><a href="https://brendanjameslynskey.github.io/MML_Hub/">&larr; All decks</a> &middot; <a href="https://brendanjameslynskey.github.io/MML_08_When_Models_Meet_Data/">prev (08)</a> &middot; <a href="https://brendanjameslynskey.github.io/MML_10_PCA/">next (10) &rarr;</a></p>
+</footer>
+
+<script>
+// Bayesian linear regression with RBF features
+(function() {
+    const cvs = document.getElementById('blr-canvas');
+    if (!cvs) return;
+    const ctx = cvs.getContext('2d');
+    const W = 700, H = 380;
+    cvs.width = W; cvs.height = H;
+
+    const xMin = -1, xMax = 1, yMin = -1.5, yMax = 1.5;
+    function toS(x,y){ return [(x-xMin)/(xMax-xMin)*W, H-(y-yMin)/(yMax-yMin)*H]; }
+    function fromS(sx,sy){ return [(sx/W)*(xMax-xMin)+xMin, yMin+(1-sy/H)*(yMax-yMin)]; }
+
+    // RBF centres
+    const M = 9;
+    const centres = [];
+    const s = 0.18;
+    for (let i=0;i<M;i++) centres.push(xMin + ((i+0.5)/M)*(xMax-xMin));
+    function phi(x){
+        const v = new Array(M);
+        for (let i=0;i<M;i++) v[i] = Math.exp(-(x-centres[i])*(x-centres[i])/(2*s*s));
+        return v;
+    }
+
+    function truth(x){ return Math.sin(2*Math.PI*x) * Math.exp(-x*x*0.5); }
+
+    let sigma = 0.2, tau = 1.0;
+    let data = [];
+
+    // matrix inversion via Gauss-Jordan (M x M)
+    function invert(A) {
+        const n = A.length;
+        const aug = A.map((r,i) => r.concat(Array.from({length:n}, (_,j) => i===j?1:0)));
+        for (let i=0;i<n;i++) {
+            let piv = i;
+            for (let k=i+1;k<n;k++) if (Math.abs(aug[k][i]) > Math.abs(aug[piv][i])) piv = k;
+            if (piv !== i) [aug[i], aug[piv]] = [aug[piv], aug[i]];
+            const d = aug[i][i] || 1e-12;
+            for (let j=0;j<2*n;j++) aug[i][j] /= d;
+            for (let k=0;k<n;k++) {
+                if (k===i) continue;
+                const f = aug[k][i];
+                for (let j=0;j<2*n;j++) aug[k][j] -= f*aug[i][j];
+            }
+        }
+        return aug.map(r => r.slice(n));
+    }
+
+    function compute() {
+        // S_N^{-1} = (1/tau^2)I + (1/sigma^2) Phi^T Phi
+        const SnInv = [];
+        for (let i=0;i<M;i++) { const row = new Array(M).fill(0); row[i] = 1/(tau*tau); SnInv.push(row); }
+        for (const d of data) {
+            const p = phi(d.x);
+            for (let i=0;i<M;i++) for (let j=0;j<M;j++) SnInv[i][j] += p[i]*p[j]/(sigma*sigma);
+        }
+        const Sn = invert(SnInv);
+        // m_N = Sn * (1/sigma^2) Phi^T y
+        const rhs = new Array(M).fill(0);
+        for (const d of data) {
+            const p = phi(d.x);
+            for (let i=0;i<M;i++) rhs[i] += p[i]*d.y/(sigma*sigma);
+        }
+        const mN = new Array(M).fill(0);
+        for (let i=0;i<M;i++) for (let j=0;j<M;j++) mN[i] += Sn[i][j]*rhs[j];
+        return {Sn, mN};
+    }
+
+    function draw() {
+        ctx.fillStyle = '#0d1117'; ctx.fillRect(0,0,W,H);
+        const ozx = toS(xMin, 0), ozy = toS(0, yMin);
+        ctx.strokeStyle = '#21262d';
+        ctx.beginPath(); ctx.moveTo(0, ozx[1]); ctx.lineTo(W, ozx[1]); ctx.stroke();
+        // truth (dashed)
+        ctx.strokeStyle = 'rgba(139,148,158,0.5)';
+        ctx.setLineDash([4,4]); ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        for (let i=0;i<=200;i++) {
+            const x = xMin + (i/200)*(xMax-xMin);
+            const [sx, sy] = toS(x, truth(x));
+            if (i===0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
+        }
+        ctx.stroke(); ctx.setLineDash([]);
+        // posterior
+        const {Sn, mN} = compute();
+        // posterior mean and predictive ribbon
+        ctx.fillStyle = 'rgba(167,139,250,0.20)';
+        ctx.beginPath();
+        const upper = [], lower = [];
+        for (let i=0;i<=200;i++) {
+            const x = xMin + (i/200)*(xMax-xMin);
+            const p = phi(x);
+            let m = 0; for (let k=0;k<M;k++) m += p[k]*mN[k];
+            let v = sigma*sigma; for (let k=0;k<M;k++) for (let l=0;l<M;l++) v += p[k]*Sn[k][l]*p[l];
+            const sd = Math.sqrt(Math.max(0, v));
+            upper.push([x, m + 2*sd]);
+            lower.push([x, m - 2*sd]);
+        }
+        for (let i=0;i<upper.length;i++) {
+            const [x,y] = upper[i]; const [sx, sy] = toS(x, y);
+            if (i===0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
+        }
+        for (let i=lower.length-1;i>=0;i--) {
+            const [x,y] = lower[i]; const [sx, sy] = toS(x, y);
+            ctx.lineTo(sx, sy);
+        }
+        ctx.closePath();
+        ctx.fill();
+        // mean curve
+        ctx.strokeStyle = '#a78bfa'; ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        for (let i=0;i<=200;i++) {
+            const x = xMin + (i/200)*(xMax-xMin);
+            const p = phi(x);
+            let m = 0; for (let k=0;k<M;k++) m += p[k]*mN[k];
+            const [sx, sy] = toS(x, m);
+            if (i===0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
+        }
+        ctx.stroke();
+        // points
+        ctx.fillStyle = '#fbbf24';
+        for (const d of data) {
+            const [sx, sy] = toS(d.x, d.y);
+            ctx.beginPath(); ctx.arc(sx, sy, 4, 0, 2*Math.PI); ctx.fill();
+        }
+        // legend
+        ctx.fillStyle = '#8b949e'; ctx.font = '12px JetBrains Mono, monospace';
+        ctx.fillText('truth (dashed)', 14, 22);
+        ctx.fillStyle = '#a78bfa'; ctx.fillText('posterior mean & 95% CI', 14, 40);
+        ctx.fillStyle = '#fbbf24'; ctx.fillText('data (click to add)', 14, 58);
+
+        // metrics
+        let mNorm = 0; for (let i=0;i<M;i++) mNorm += mN[i]*mN[i];
+        document.getElementById('blr-n').textContent = data.length;
+        document.getElementById('blr-mn').textContent = Math.sqrt(mNorm).toFixed(2);
+        // mean predictive width across grid
+        let widthSum = 0, count = 0;
+        for (let i=0;i<=20;i++) {
+            const x = xMin + (i/20)*(xMax-xMin);
+            const p = phi(x);
+            let v = sigma*sigma; for (let k=0;k<M;k++) for (let l=0;l<M;l++) v += p[k]*Sn[k][l]*p[l];
+            widthSum += 2*Math.sqrt(Math.max(0,v)); count++;
+        }
+        document.getElementById('blr-w').textContent = (widthSum/count).toFixed(2);
+    }
+
+    document.getElementById('blr-noise').addEventListener('input', e => { sigma = parseFloat(e.target.value); document.getElementById('blr-noise-r').textContent = sigma.toFixed(2); draw(); });
+    document.getElementById('blr-prior').addEventListener('input', e => { tau = parseFloat(e.target.value); document.getElementById('blr-prior-r').textContent = tau.toFixed(2); draw(); });
+    document.getElementById('blr-clear').addEventListener('click', () => { data = []; draw(); });
+    document.getElementById('blr-truth').addEventListener('click', () => {
+        for (let i=0;i<5;i++) {
+            const x = xMin + Math.random()*(xMax-xMin);
+            data.push({x, y: truth(x) + 0.15*((Math.random()+Math.random()+Math.random())-1.5)});
+        }
+        draw();
+    });
+    cvs.addEventListener('click', e => {
+        const r = cvs.getBoundingClientRect();
+        const sx = (e.clientX-r.left)*(W/r.width), sy = (e.clientY-r.top)*(H/r.height);
+        const [wx, wy] = fromS(sx, sy);
+        if (wx > xMin && wx < xMax) data.push({x: wx, y: wy});
+        draw();
+    });
+    draw();
+})();
+</script>
+
+</body>
+</html>
